@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$UNC Airdrop Sell Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080b0f;--surface:#0d1117;--border:#1c2333;--accent:#00ff88;--text:#e2e8f0;--text-dim:#718096;--red:#ff4455;--orange:#ff8c42;--yellow:#ffd700;--green:#00ff88;--teal:#00d4ff;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;min-height:100vh;}
+header{border-bottom:1px solid var(--border);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;}
+.logo span{color:var(--accent);}
+.badge{display:flex;align-items:center;gap:8px;font-size:0.7rem;color:var(--accent);}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+main{max-width:1200px;margin:0 auto;padding:32px;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 22px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.card.green::before{background:var(--green);}
+.card.red::before{background:var(--red);}
+.card.yellow::before{background:var(--yellow);}
+.card.teal::before{background:var(--teal);}
+.card.orange::before{background:var(--orange);}
+.clabel{font-size:0.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin-bottom:6px;}
+.cval{font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;line-height:1;}
+.card.green .cval{color:var(--green);}
+.card.red .cval{color:var(--red);}
+.card.yellow .cval{color:var(--yellow);}
+.card.teal .cval{color:var(--teal);}
+.card.orange .cval{color:var(--orange);}
+.csub{font-size:0.65rem;color:var(--text-dim);margin-top:4px;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px 28px;margin-bottom:24px;}
+.ptitle{font-size:0.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin-bottom:16px;}
+.bar-track{height:32px;background:var(--bg);border-radius:6px;overflow:hidden;display:flex;}
+.seg{height:100%;transition:width 1s ease;}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--text-dim);}
+.leg-dot{width:10px;height:10px;border-radius:2px;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:10px 14px;font-size:0.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);text-align:left;background:var(--bg);border-bottom:1px solid var(--border);cursor:pointer;}
+thead th:hover{color:var(--accent);}
+tbody tr{border-bottom:1px solid rgba(28,35,51,0.5);}
+tbody tr:hover{background:rgba(0,255,136,0.03);}
+tbody td{padding:9px 14px;font-size:0.7rem;}
+.waddr{color:var(--teal);}
+.waddr a{color:inherit;text-decoration:none;}
+.waddr a:hover{text-decoration:underline;}
+.num{text-align:right;font-variant-numeric:tabular-nums;}
+.sbadge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:0.58rem;font-weight:700;text-transform:uppercase;}
+.s-diamond{background:rgba(0,212,255,.15);color:var(--teal);}
+.s-holding{background:rgba(0,255,136,.12);color:var(--green);}
+.s-partial{background:rgba(255,215,0,.12);color:var(--yellow);}
+.s-mostly{background:rgba(255,140,66,.15);color:var(--orange);}
+.s-dump{background:rgba(255,68,85,.15);color:var(--red);}
+.s-error{background:rgba(100,100,100,.15);color:#666;}
+.mbar{width:70px;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;}
+.mbar-fill{height:100%;border-radius:3px;}
+.pager{padding:12px 20px;display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--text-dim);border-top:1px solid var(--border);}
+.pbtn{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Space Mono',monospace;font-size:0.65rem;padding:4px 10px;border-radius:4px;cursor:pointer;}
+.pbtn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.pbtn:disabled{opacity:.3;cursor:default;}
+.pbtn.active{border-color:var(--accent);color:var(--accent);}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+#search{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:0.7rem;padding:5px 12px;border-radius:5px;outline:none;width:200px;}
+#search:focus{border-color:var(--accent);}
+.fbtn{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Space Mono',monospace;font-size:0.65rem;padding:5px 12px;border-radius:5px;cursor:pointer;text-transform:uppercase;}
+.fbtn:hover,.fbtn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,255,136,.05);}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">$<span>UNC</span> Airdrop Tracker</div>
+<div class="badge"><div class="dot"></div>On-chain data</div>
+</header>
+<main>
+<div class="stat-grid" id="stats"></div>
+<div class="panel">
+<div class="ptitle">Supply distribution by wallet behaviour</div>
+<div class="bar-track" id="bar"></div>
+<div class="legend" id="legend"></div>
+</div>
+<div class="panel" style="overflow:hidden;padding:0">
+<div style="padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div class="ptitle" style="margin:0">Wallet detail</div>
+<div class="controls">
+<input id="search" placeholder="Search wallet…" oninput="filter()">
+<button class="fbtn active" onclick="setF('all',this)">All</button>
+<button class="fbtn" onclick="setF('diamond_hands',this)">💎</button>
+<button class="fbtn" onclick="setF('full_dump',this)">🔴 Dumped</button>
+<button class="fbtn" onclick="setF('error',this)">⚠️ Errors</button>
+</div>
+</div>
+<table>
+<thead><tr>
+<th onclick="sort('wallet')">Wallet</th>
+<th class="num" onclick="sort('received')">Received</th>
+<th class="num" onclick="sort('current')">Current</th>
+<th class="num" onclick="sort('sold')">Sold</th>
+<th class="num" onclick="sort('pct_sold')">% Sold</th>
+<th>Status</th>
+</tr></thead>
+<tbody id="tbody"></tbody>
+</table>
+<div class="pager" id="pager"></div>
+</div>
+</main>
+<script>
+const COLORS={diamond_hands:'#00d4ff',mostly_holding:'#00ff88',partial_sell:'#ffd700',mostly_sold:'#ff8c42',full_dump:'#ff4455',error:'#444'};
+const LABELS={diamond_hands:'💎 Diamond Hands',mostly_holding:'🟢 Mostly Holding',partial_sell:'🟡 Partial Sell',mostly_sold:'🟠 Mostly Sold',full_dump:'🔴 Full Dump',error:'⚠️ Error'};
+const BADGES={diamond_hands:'s-diamond',mostly_holding:'s-holding',partial_sell:'s-partial',mostly_sold:'s-mostly',full_dump:'s-dump',error:'s-error'};
+let all=[],filtered=[],curFilter='all',curSort={k:'pct_sold',d:-1},page=1;
+const PS=50;
+
+fetch('unc_wallet_data.json').then(r=>r.json()).then(d=>{all=d;init();}).catch(()=>{
+  document.querySelector('main').innerHTML='<div style="text-align:center;padding:60px;color:#718096"><p style="font-size:1.5rem;margin-bottom:12px">⚠️</p><p>Could not load unc_wallet_data.json</p><p style="margin-top:8px;font-size:0.75rem">Make sure it is in the same folder as this HTML file</p></div>';
+});
+
+function init(){
+  const valid=all.filter(r=>r.sold!==null);
+  const tr=valid.reduce((s,r)=>s+r.received,0);
+  const ts=valid.reduce((s,r)=>s+Math.max(0,r.sold),0);
+  const th=valid.reduce((s,r)=>s+Math.max(0,r.current),0);
+  const ps=(ts/tr*100).toFixed(1);
+  const ph=(th/tr*100).toFixed(1);
+  const dump=valid.filter(r=>r.status==='full_dump').length;
+  const dia=valid.filter(r=>r.status==='diamond_hands').length;
+  const err=all.filter(r=>r.status==='error').length;
+  document.getElementById('stats').innerHTML=[
+    {l:'Total Wallets',v:all.length.toLocaleString(),s:'airdrop recipients',c:'teal'},
+    {l:'% Supply Sold',v:ps+'%',s:(ts/1e6).toFixed(2)+'M UNC sold',c:'red'},
+    {l:'% Still Held',v:ph+'%',s:(th/1e6).toFixed(2)+'M UNC held',c:'green'},
+    {l:'Full Dumpers',v:dump.toLocaleString(),s:(dump/valid.length*100).toFixed(1)+'% of wallets',c:'orange'},
+    {l:'Diamond Hands',v:dia.toLocaleString(),s:(dia/valid.length*100).toFixed(1)+'% of wallets',c:'yellow'},
+    {l:'Errors',v:err.toLocaleString(),s:'closed token accounts',c:'teal'},
+  ].map(c=>`<div class="card ${c.c}"><div class="clabel">${c.l}</div><div class="cval">${c.v}</div><div class="csub">${c.s}</div></div>`).join('');
+
+  const groups=['diamond_hands','mostly_holding','partial_sell','mostly_sold','full_dump'];
+  document.getElementById('bar').innerHTML=groups.map(g=>{
+    const t=valid.filter(r=>r.status===g).reduce((s,r)=>s+r.received,0);
+    const p=(t/tr*100).toFixed(1);
+    return `<div class="seg" style="width:${p}%;background:${COLORS[g]}" title="${LABELS[g]}: ${p}%"></div>`;
+  }).join('');
+  document.getElementById('legend').innerHTML=groups.map(g=>{
+    const c=valid.filter(r=>r.status===g).length;
+    return `<div class="leg-item"><div class="leg-dot" style="background:${COLORS[g]}"></div>${LABELS[g]} — ${c.toLocaleString()} (${(c/valid.length*100).toFixed(1)}%)</div>`;
+  }).join('');
+  applyFilter();
+}
+
+function setF(f,btn){curFilter=f;page=1;document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');applyFilter();}
+function filter(){page=1;applyFilter();}
+function applyFilter(){
+  const q=document.getElementById('search').value.toLowerCase();
+  filtered=all.filter(r=>{
+    const mf=curFilter==='all'||r.status===curFilter;
+    const ms=!q||r.wallet.toLowerCase().includes(q);
+    return mf&&ms;
+  });
+  sortRows();renderPage();
+}
+function sort(k){curSort.d=curSort.k===k?-curSort.d:-1;curSort.k=k;sortRows();renderPage();}
+function sortRows(){
+  filtered.sort((a,b)=>{
+    const av=a[curSort.k]??-Infinity,bv=b[curSort.k]??-Infinity;
+    return av<bv?curSort.d:av>bv?-curSort.d:0;
+  });
+}
+function renderPage(){
+  const start=(page-1)*PS,pg=filtered.slice(start,start+PS);
+  document.getElementById('tbody').innerHTML=pg.map(r=>{
+    const pct=Math.max(0,r.pct_sold??0);
+    const col=COLORS[r.status]||'#444';
+    const sold=r.sold!==null?(r.sold>0?`<span style="color:var(--red)">${r.sold.toFixed(2)}</span>`:`<span style="color:var(--green)">${r.sold.toFixed(2)}</span>`):'—';
+    return `<tr>
+      <td class="waddr"><a href="https://solscan.io/account/${r.wallet}" target="_blank">${r.wallet.slice(0,6)}…${r.wallet.slice(-4)}</a></td>
+      <td class="num">${r.received?.toFixed(2)??'—'}</td>
+      <td class="num">${r.current!==null&&r.current!==undefined?r.current.toFixed(2):'—'}</td>
+      <td class="num">${sold}</td>
+      <td class="num"><div class="mbar"><div class="mbar-fill" style="width:${Math.min(100,pct)}%;background:${col}"></div></div> <span style="color:${col}">${r.pct_sold!==null?pct+'%':'—'}</span></td>
+      <td><span class="sbadge ${BADGES[r.status]||''}">${LABELS[r.status]||r.status}</span></td>
+    </tr>`;
+  }).join('');
+  const pages=Math.ceil(filtered.length/PS);
+  const s=start+1,e=Math.min(page*PS,filtered.length);
+  let btns='';
+  for(let p=1;p<=Math.min(pages,5);p++) btns+=`<button class="pbtn ${p===page?'active':''}" onclick="goPage(${p})">${p}</button>`;
+  if(pages>5) btns+=`<span style="color:#444;font-size:.65rem"> …${pages}pp</span>`;
+  document.getElementById('pager').innerHTML=`<span>${s}–${e} of ${filtered.length.toLocaleString()}</span><div style="display:flex;gap:6px"><button class="pbtn" onclick="goPage(${page-1})" ${page===1?'disabled':''}>←</button>${btns}<button class="pbtn" onclick="goPage(${page+1})" ${page===pages?'disabled':''}>→</button></div>`;
+}
+function goPage(p){const pages=Math.ceil(filtered.length/PS);if(p<1||p>pages)return;page=p;renderPage();}
+</script>
+</body>
+</html>
