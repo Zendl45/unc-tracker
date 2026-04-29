@@ -24,6 +24,7 @@ main{max-width:1200px;margin:0 auto;padding:32px;}
 .card.yellow::before{background:var(--yellow);}
 .card.teal::before{background:var(--teal);}
 .card.orange::before{background:var(--orange);}
+.card.gray::before{background:#444;}
 .clabel{font-size:0.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin-bottom:6px;}
 .cval{font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;line-height:1;}
 .card.green .cval{color:var(--green);}
@@ -31,6 +32,7 @@ main{max-width:1200px;margin:0 auto;padding:32px;}
 .card.yellow .cval{color:var(--yellow);}
 .card.teal .cval{color:var(--teal);}
 .card.orange .cval{color:var(--orange);}
+.card.gray .cval{color:#666;}
 .csub{font-size:0.65rem;color:var(--text-dim);margin-top:4px;}
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px 28px;margin-bottom:24px;}
 .ptitle{font-size:0.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin-bottom:16px;}
@@ -39,9 +41,17 @@ main{max-width:1200px;margin:0 auto;padding:32px;}
 .legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;}
 .leg-item{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--text-dim);}
 .leg-dot{width:10px;height:10px;border-radius:2px;}
+.breakdown-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:24px;}
+.bcard{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:12px;}
+.bcard-icon{font-size:1.4rem;}
+.bcard-info{}
+.bcard-val{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;}
+.bcard-label{font-size:0.6rem;color:var(--text-dim);margin-top:2px;}
+.bcard-pct{font-size:0.65rem;margin-top:2px;}
 table{width:100%;border-collapse:collapse;}
-thead th{padding:10px 14px;font-size:0.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);text-align:left;background:var(--bg);border-bottom:1px solid var(--border);cursor:pointer;}
+thead th{padding:10px 14px;font-size:0.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);text-align:left;background:var(--bg);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
 thead th:hover{color:var(--accent);}
+thead th.sorted{color:var(--accent);}
 tbody tr{border-bottom:1px solid rgba(28,35,51,0.5);}
 tbody tr:hover{background:rgba(0,255,136,0.03);}
 tbody td{padding:9px 14px;font-size:0.7rem;}
@@ -68,39 +78,48 @@ tbody td{padding:9px 14px;font-size:0.7rem;}
 #search:focus{border-color:var(--accent);}
 .fbtn{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:'Space Mono',monospace;font-size:0.65rem;padding:5px 12px;border-radius:5px;cursor:pointer;text-transform:uppercase;}
 .fbtn:hover,.fbtn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,255,136,.05);}
+.note{font-size:0.65rem;color:var(--text-dim);padding:10px 0 0 0;}
 </style>
 </head>
 <body>
 <header>
 <div class="logo">$<span>UNC</span> Airdrop Tracker</div>
-<div class="badge"><div class="dot"></div>On-chain data</div>
+<div class="badge"><div class="dot"></div>Live on-chain data</div>
 </header>
 <main>
 <div class="stat-grid" id="stats"></div>
+
 <div class="panel">
-<div class="ptitle">Supply distribution by wallet behaviour</div>
+<div class="ptitle">Wallet behaviour breakdown — all 3,046 wallets</div>
+<div class="breakdown-grid" id="breakdown"></div>
+<p class="note">* Error wallets = sold everything AND closed their token account on Solana (reclaiming rent). Counted as full dumps.</p>
+</div>
+
+<div class="panel">
+<div class="ptitle">Supply distribution across wallet groups</div>
 <div class="bar-track" id="bar"></div>
 <div class="legend" id="legend"></div>
 </div>
+
 <div class="panel" style="overflow:hidden;padding:0">
 <div style="padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div class="ptitle" style="margin:0">Wallet detail</div>
+<div class="ptitle" style="margin:0">All wallets — sorted by biggest sellers first</div>
 <div class="controls">
 <input id="search" placeholder="Search wallet…" oninput="filter()">
 <button class="fbtn active" onclick="setF('all',this)">All</button>
-<button class="fbtn" onclick="setF('diamond_hands',this)">💎</button>
+<button class="fbtn" onclick="setF('diamond_hands',this)">💎 Held</button>
 <button class="fbtn" onclick="setF('full_dump',this)">🔴 Dumped</button>
-<button class="fbtn" onclick="setF('error',this)">⚠️ Errors</button>
+<button class="fbtn" onclick="setF('error',this)">⚠️ Closed</button>
 </div>
 </div>
 <table>
 <thead><tr>
-<th onclick="sort('wallet')">Wallet</th>
-<th class="num" onclick="sort('received')">Received</th>
-<th class="num" onclick="sort('current')">Current</th>
-<th class="num" onclick="sort('sold')">Sold</th>
-<th class="num" onclick="sort('pct_sold')">% Sold</th>
-<th>Status</th>
+<th onclick="sort('wallet')"># Wallet</th>
+<th class="num" onclick="sort('received')">Airdropped</th>
+<th class="num" onclick="sort('current')">Still Holding</th>
+<th class="num" onclick="sort('sold')">Amount Sold</th>
+<th class="num sorted" onclick="sort('pct_sold')">% Sold ↓</th>
+<th>Behaviour</th>
 </tr></thead>
 <tbody id="tbody"></tbody>
 </table>
@@ -108,45 +127,85 @@ tbody td{padding:9px 14px;font-size:0.7rem;}
 </div>
 </main>
 <script>
-const COLORS={diamond_hands:'#00d4ff',mostly_holding:'#00ff88',partial_sell:'#ffd700',mostly_sold:'#ff8c42',full_dump:'#ff4455',error:'#444'};
-const LABELS={diamond_hands:'💎 Diamond Hands',mostly_holding:'🟢 Mostly Holding',partial_sell:'🟡 Partial Sell',mostly_sold:'🟠 Mostly Sold',full_dump:'🔴 Full Dump',error:'⚠️ Error'};
-const BADGES={diamond_hands:'s-diamond',mostly_holding:'s-holding',partial_sell:'s-partial',mostly_sold:'s-mostly',full_dump:'s-dump',error:'s-error'};
+const COLORS={diamond_hands:'#00d4ff',mostly_holding:'#00ff88',partial_sell:'#ffd700',mostly_sold:'#ff8c42',full_dump:'#ff4455',error:'#ff4455'};
+const LABELS={diamond_hands:'💎 Diamond Hands',mostly_holding:'🟢 Mostly Holding',partial_sell:'🟡 Partial Sell',mostly_sold:'🟠 Mostly Sold',full_dump:'🔴 Full Dump',error:'🔴 Full Dump*'};
+const BADGES={diamond_hands:'s-diamond',mostly_holding:'s-holding',partial_sell:'s-partial',mostly_sold:'s-mostly',full_dump:'s-dump',error:'s-dump'};
+const ICONS={diamond_hands:'💎',mostly_holding:'🟢',partial_sell:'🟡',mostly_sold:'🟠',full_dump:'🔴',error:'⚠️'};
 let all=[],filtered=[],curFilter='all',curSort={k:'pct_sold',d:-1},page=1;
 const PS=50;
 
-fetch('unc_wallet_data.json').then(r=>r.json()).then(d=>{all=d;init();}).catch(()=>{
+fetch('unc_wallet_data.json').then(r=>r.json()).then(d=>{
+  // treat error wallets as full dumps for display
+  all=d.map(r=>r.status==='error'?{...r,pct_sold:100,sold:r.received,current:0}:r);
+  init();
+}).catch(()=>{
   document.querySelector('main').innerHTML='<div style="text-align:center;padding:60px;color:#718096"><p style="font-size:1.5rem;margin-bottom:12px">⚠️</p><p>Could not load unc_wallet_data.json</p><p style="margin-top:8px;font-size:0.75rem">Make sure it is in the same folder as this HTML file</p></div>';
 });
 
 function init(){
-  const valid=all.filter(r=>r.sold!==null);
-  const tr=valid.reduce((s,r)=>s+r.received,0);
-  const ts=valid.reduce((s,r)=>s+Math.max(0,r.sold),0);
-  const th=valid.reduce((s,r)=>s+Math.max(0,r.current),0);
-  const ps=(ts/tr*100).toFixed(1);
-  const ph=(th/tr*100).toFixed(1);
-  const dump=valid.filter(r=>r.status==='full_dump').length;
-  const dia=valid.filter(r=>r.status==='diamond_hands').length;
-  const err=all.filter(r=>r.status==='error').length;
+  const total=all.length;
+  // clamp pct_sold to 0-100 for display (ignore negative = bought more)
+  const valid=all.filter(r=>r.pct_sold!==null);
+  const totalReceived=all.reduce((s,r)=>s+(r.received||0),0);
+  const totalSold=all.reduce((s,r)=>s+Math.max(0,r.sold||0),0);
+  const totalHeld=all.reduce((s,r)=>s+Math.max(0,r.current||0),0);
+  const pctSold=(totalSold/totalReceived*100).toFixed(1);
+  const pctHeld=(totalHeld/totalReceived*100).toFixed(1);
+  const dump=all.filter(r=>r.status==='full_dump'||r.status==='error').length;
+  const dia=all.filter(r=>r.status==='diamond_hands').length;
+
+  // top stat cards
   document.getElementById('stats').innerHTML=[
-    {l:'Total Wallets',v:all.length.toLocaleString(),s:'airdrop recipients',c:'teal'},
-    {l:'% Supply Sold',v:ps+'%',s:(ts/1e6).toFixed(2)+'M UNC sold',c:'red'},
-    {l:'% Still Held',v:ph+'%',s:(th/1e6).toFixed(2)+'M UNC held',c:'green'},
-    {l:'Full Dumpers',v:dump.toLocaleString(),s:(dump/valid.length*100).toFixed(1)+'% of wallets',c:'orange'},
-    {l:'Diamond Hands',v:dia.toLocaleString(),s:(dia/valid.length*100).toFixed(1)+'% of wallets',c:'yellow'},
-    {l:'Errors',v:err.toLocaleString(),s:'closed token accounts',c:'teal'},
+    {l:'Total Wallets Airdropped',v:total.toLocaleString(),s:'received 420.69 UNC each',c:'teal'},
+    {l:'Total UNC Airdropped',v:(totalReceived/1e6).toFixed(2)+'M',s:'420.69 × '+total.toLocaleString()+' wallets',c:'teal'},
+    {l:'% of Airdrop Sold',v:pctSold+'%',s:(totalSold/1e3).toFixed(0)+'K UNC dumped on market',c:'red'},
+    {l:'% Still Being Held',v:pctHeld+'%',s:(totalHeld/1e3).toFixed(0)+'K UNC still in wallets',c:'green'},
+    {l:'Wallets That Dumped',v:(dump).toLocaleString(),s:(dump/total*100).toFixed(1)+'% of all recipients',c:'orange'},
+    {l:'Wallets Still Holding',v:dia.toLocaleString(),s:(dia/total*100).toFixed(1)+'% of all recipients',c:'yellow'},
   ].map(c=>`<div class="card ${c.c}"><div class="clabel">${c.l}</div><div class="cval">${c.v}</div><div class="csub">${c.s}</div></div>`).join('');
 
-  const groups=['diamond_hands','mostly_holding','partial_sell','mostly_sold','full_dump'];
-  document.getElementById('bar').innerHTML=groups.map(g=>{
-    const t=valid.filter(r=>r.status===g).reduce((s,r)=>s+r.received,0);
-    const p=(t/tr*100).toFixed(1);
-    return `<div class="seg" style="width:${p}%;background:${COLORS[g]}" title="${LABELS[g]}: ${p}%"></div>`;
+  // breakdown cards — all groups including error, totals to 3046
+  const groups=['full_dump','error','diamond_hands','mostly_holding','partial_sell','mostly_sold'];
+  const groupLabels={full_dump:'Full Dump',error:'Dumped + Closed Account',diamond_hands:'Diamond Hands',mostly_holding:'Mostly Holding',partial_sell:'Partial Sell',mostly_sold:'Mostly Sold'};
+  const counts={};
+  groups.forEach(g=>counts[g]=all.filter(r=>r.status===g).length);
+  const grandTotal=Object.values(counts).reduce((a,b)=>a+b,0);
+
+  document.getElementById('breakdown').innerHTML=groups.map(g=>`
+    <div class="bcard">
+      <div class="bcard-icon">${ICONS[g]}</div>
+      <div class="bcard-info">
+        <div class="bcard-val" style="color:${COLORS[g]}">${counts[g].toLocaleString()}</div>
+        <div class="bcard-label">${groupLabels[g]}</div>
+        <div class="bcard-pct" style="color:${COLORS[g]}">${(counts[g]/grandTotal*100).toFixed(1)}% of ${grandTotal.toLocaleString()} wallets</div>
+      </div>
+    </div>
+  `).join('') + `<div class="bcard" style="border-color:var(--accent)">
+    <div class="bcard-icon">📊</div>
+    <div class="bcard-info">
+      <div class="bcard-val" style="color:var(--accent)">${grandTotal.toLocaleString()}</div>
+      <div class="bcard-label">Total Wallets</div>
+      <div class="bcard-pct" style="color:var(--accent)">100%</div>
+    </div>
+  </div>`;
+
+  // supply bar — use original status (not remapped error)
+  const barGroups=['diamond_hands','mostly_holding','partial_sell','mostly_sold','full_dump','error'];
+  const barColors={...COLORS,error:'#cc2233'};
+  document.getElementById('bar').innerHTML=barGroups.map(g=>{
+    const t=all.filter(r=>r.status===g).reduce((s,r)=>s+(r.received||0),0);
+    const p=(t/totalReceived*100).toFixed(1);
+    if(p<=0) return '';
+    return `<div class="seg" style="width:${p}%;background:${barColors[g]}" title="${groupLabels[g]}: ${p}%"></div>`;
   }).join('');
-  document.getElementById('legend').innerHTML=groups.map(g=>{
-    const c=valid.filter(r=>r.status===g).length;
-    return `<div class="leg-item"><div class="leg-dot" style="background:${COLORS[g]}"></div>${LABELS[g]} — ${c.toLocaleString()} (${(c/valid.length*100).toFixed(1)}%)</div>`;
+
+  document.getElementById('legend').innerHTML=barGroups.map(g=>{
+    const c=all.filter(r=>r.status===g).length;
+    if(!c) return '';
+    const p=(c/grandTotal*100).toFixed(1);
+    return `<div class="leg-item"><div class="leg-dot" style="background:${barColors[g]}"></div>${groupLabels[g]} — ${c.toLocaleString()} wallets (${p}%)</div>`;
   }).join('');
+
   applyFilter();
 }
 
@@ -161,7 +220,13 @@ function applyFilter(){
   });
   sortRows();renderPage();
 }
-function sort(k){curSort.d=curSort.k===k?-curSort.d:-1;curSort.k=k;sortRows();renderPage();}
+function sort(k){
+  document.querySelectorAll('thead th').forEach(t=>t.classList.remove('sorted'));
+  event.currentTarget.classList.add('sorted');
+  curSort.d=curSort.k===k?-curSort.d:-1;
+  curSort.k=k;
+  sortRows();renderPage();
+}
 function sortRows(){
   filtered.sort((a,b)=>{
     const av=a[curSort.k]??-Infinity,bv=b[curSort.k]??-Infinity;
@@ -170,16 +235,18 @@ function sortRows(){
 }
 function renderPage(){
   const start=(page-1)*PS,pg=filtered.slice(start,start+PS);
-  document.getElementById('tbody').innerHTML=pg.map(r=>{
-    const pct=Math.max(0,r.pct_sold??0);
+  document.getElementById('tbody').innerHTML=pg.map((r,i)=>{
+    const pct=Math.min(100,Math.max(0,r.pct_sold??0));
     const col=COLORS[r.status]||'#444';
-    const sold=r.sold!==null?(r.sold>0?`<span style="color:var(--red)">${r.sold.toFixed(2)}</span>`:`<span style="color:var(--green)">${r.sold.toFixed(2)}</span>`):'—';
+    const soldVal=r.sold!==null?Math.max(0,r.sold):null;
+    const soldDisplay=soldVal!==null?`<span style="color:${soldVal>0?'var(--red)':'var(--green)'}">${soldVal.toFixed(2)}</span>`:'—';
+    const currentDisplay=r.current!==null&&r.current!==undefined?Math.max(0,r.current).toFixed(2):'—';
     return `<tr>
       <td class="waddr"><a href="https://solscan.io/account/${r.wallet}" target="_blank">${r.wallet.slice(0,6)}…${r.wallet.slice(-4)}</a></td>
       <td class="num">${r.received?.toFixed(2)??'—'}</td>
-      <td class="num">${r.current!==null&&r.current!==undefined?r.current.toFixed(2):'—'}</td>
-      <td class="num">${sold}</td>
-      <td class="num"><div class="mbar"><div class="mbar-fill" style="width:${Math.min(100,pct)}%;background:${col}"></div></div> <span style="color:${col}">${r.pct_sold!==null?pct+'%':'—'}</span></td>
+      <td class="num">${currentDisplay}</td>
+      <td class="num">${soldDisplay}</td>
+      <td class="num"><div class="mbar"><div class="mbar-fill" style="width:${pct}%;background:${col}"></div></div> <span style="color:${col}">${pct}%</span></td>
       <td><span class="sbadge ${BADGES[r.status]||''}">${LABELS[r.status]||r.status}</span></td>
     </tr>`;
   }).join('');
@@ -187,8 +254,8 @@ function renderPage(){
   const s=start+1,e=Math.min(page*PS,filtered.length);
   let btns='';
   for(let p=1;p<=Math.min(pages,5);p++) btns+=`<button class="pbtn ${p===page?'active':''}" onclick="goPage(${p})">${p}</button>`;
-  if(pages>5) btns+=`<span style="color:#444;font-size:.65rem"> …${pages}pp</span>`;
-  document.getElementById('pager').innerHTML=`<span>${s}–${e} of ${filtered.length.toLocaleString()}</span><div style="display:flex;gap:6px"><button class="pbtn" onclick="goPage(${page-1})" ${page===1?'disabled':''}>←</button>${btns}<button class="pbtn" onclick="goPage(${page+1})" ${page===pages?'disabled':''}>→</button></div>`;
+  if(pages>5) btns+=`<span style="color:#444;font-size:.65rem"> …${pages} pages</span>`;
+  document.getElementById('pager').innerHTML=`<span>Showing ${s}–${e} of ${filtered.length.toLocaleString()} wallets</span><div style="display:flex;gap:6px"><button class="pbtn" onclick="goPage(${page-1})" ${page===1?'disabled':''}>←</button>${btns}<button class="pbtn" onclick="goPage(${page+1})" ${page===pages?'disabled':''}>→</button></div>`;
 }
 function goPage(p){const pages=Math.ceil(filtered.length/PS);if(p<1||p>pages)return;page=p;renderPage();}
 </script>
